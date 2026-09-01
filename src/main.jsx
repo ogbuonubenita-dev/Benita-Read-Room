@@ -1,7 +1,7 @@
 import React,{useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./styles.css";
-
+import { supabase } from "./supabaseClient";
 const books=[
  {id:1,title:"A Scandalous Attraction",cat:"Romance · Fiction",price:7.99,desc:"A polished digital reading experience for your featured novel.",cover:"linear-gradient(145deg,#24173d,#7655ff)"},
  {id:2,title:"Ideas That Move You",cat:"Personal Growth",price:5.99,desc:"Practical ideas for growth, creativity and everyday decisions.",cover:"linear-gradient(145deg,#283132,#789b94)"},
@@ -23,7 +23,21 @@ function App(){
  const login=e=>{e.preventDefault();const email=e.currentTarget.email.value;const u={name:email.split("@")[0],email,admin:email.toLowerCase().includes("admin")};localStorage.setItem("brrUser",JSON.stringify(u));setUser(u);go("dashboard")};
  const signup=e=>{e.preventDefault();const u={name:e.currentTarget.name.value,email:e.currentTarget.email.value,admin:false};localStorage.setItem("brrUser",JSON.stringify(u));setUser(u);go("dashboard")};
  const subscribe=plan=>{localStorage.setItem("brrMember","1");setMember(true);notify(`${plan} membership selected — connect Paystack/Flutterwave/Stripe for live checkout.`);go("dashboard")};
- const buy=b=>notify(`Checkout for "${b.title}" — connect your payment provider to complete purchase.`);
+const buy = async (b) => {
+  const email = user?.email;
+  if (!email) return notify("Please log in before purchasing.");
+
+  const { data, error } = await supabase.functions.invoke("create-payment", {
+    body: { email, amount: Number(b.price) * 100 }
+  });
+
+  if (error) return notify(error.message);
+
+  if (data?.data?.authorization_url) {
+    window.location.href = data.data.authorization_url;
+  } else {
+    notify("Unable to start payment.");
+  } 
  const logout=()=>{localStorage.removeItem("brrUser");setUser(null);go("home")};
 
  function Nav(){return <header><div className="nav wrap"><button className="logo" onClick={()=>go("home")}>BENITA<span>.</span></button><div className="links"><button onClick={()=>go("books")}>Books</button><button onClick={()=>go("blog")}>Blog</button><button onClick={()=>go("membership")}>Membership</button>{user?<button onClick={()=>go("dashboard")}>Dashboard</button>:<button onClick={()=>go("login")}>Login</button>}{user?.admin&&<button onClick={()=>go("admin")}>Admin</button>}<button className="pill dark" onClick={()=>go(user?"dashboard":"signup")}>{user?"My account":"Join"}</button></div></div></header>}
