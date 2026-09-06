@@ -37,7 +37,7 @@ const buy = async (b) => {
     window.location.href = data.data.authorization_url;
   } else {
     notify("Unable to start payment.");
-  } 
+  } ;
  const logout=()=>{localStorage.removeItem("brrUser");setUser(null);go("home")};
 
  function Nav(){return <header><div className="nav wrap"><button className="logo" onClick={()=>go("home")}>BENITA<span>.</span></button><div className="links"><button onClick={()=>go("books")}>Books</button><button onClick={()=>go("blog")}>Blog</button><button onClick={()=>go("membership")}>Membership</button>{user?<button onClick={()=>go("dashboard")}>Dashboard</button>:<button onClick={()=>go("login")}>Login</button>}{user?.admin&&<button onClick={()=>go("admin")}>Admin</button>}<button className="pill dark" onClick={()=>go(user?"dashboard":"signup")}>{user?"My account":"Join"}</button></div></div></header>}
