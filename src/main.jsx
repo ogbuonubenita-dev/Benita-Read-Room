@@ -37,7 +37,7 @@ const buy = async (b) => {
     window.location.href = data.data.authorization_url;
   } else {
     notify("Unable to start payment.");
-   
+  }
 };
  const logout=()=>{localStorage.removeItem("brrUser");setUser(null);go("home")};
 
