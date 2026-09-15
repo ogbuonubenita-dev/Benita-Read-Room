@@ -1,12 +1,8 @@
-import React,{useState} from "react";
+import React,{useState,useEffect} from "react";
 import {createRoot} from "react-dom/client";
 import "./styles.css";
 import { supabase } from "./supabaseClient";
-const books=[
- {id:1,title:"A Scandalous Attraction",cat:"Romance · Fiction",price:7.99,desc:"A polished digital reading experience for your featured novel.",cover:"linear-gradient(145deg,#24173d,#7655ff)"},
- {id:2,title:"Ideas That Move You",cat:"Personal Growth",price:5.99,desc:"Practical ideas for growth, creativity and everyday decisions.",cover:"linear-gradient(145deg,#283132,#789b94)"},
- {id:3,title:"The Reading Room",cat:"Collection",price:9.99,desc:"A curated collection of essays, reflections and useful ideas.",cover:"linear-gradient(145deg,#49321f,#c9995b)"}
-];
+
 const posts=[
  {tag:"Writing",title:"Building a writing habit that lasts",desc:"Simple ways to make space for your ideas even on busy days."},
  {tag:"Behind the book",title:"What happens before a book reaches you?",desc:"A look inside the creative and publishing process."},
@@ -18,6 +14,32 @@ function App(){
  const [user,setUser]=useState(JSON.parse(localStorage.getItem("brrUser")||"null"));
  const [member,setMember]=useState(localStorage.getItem("brrMember")==="1");
  const [toast,setToast]=useState("");
+ const [books,setBooks]=useState([]);
+
+useEffect(()=>{
+  loadBooks();
+},[]);
+
+async function loadBooks(){
+  const {data,error}=await supabase
+    .from("books")
+    .select("id,title,price_kobo,currency,cover_path,category_id,categories(name)")
+    .eq("published",true);
+
+  if(error){
+    console.error("Could not load books:",error);
+    return;
+  }
+
+  setBooks((data||[]).map(b=>({
+    id:b.id,
+    title:b.title,
+    cat:b.categories?.name||"Uncategorized",
+    price:Number(b.price_kobo||0)/100,
+    desc:"A digital book from Benita Bookstore.",
+    cover:"linear-gradient(145deg,#24173d,#7655ff)"
+  })));
+}
  const go=p=>{setPage(p);location.hash="#/"+p;scrollTo(0,0)};
  const notify=m=>{setToast(m);setTimeout(()=>setToast(""),2500)};
  const login=e=>{e.preventDefault();const email=e.currentTarget.email.value;const u={name:email.split("@")[0],email,admin:email.toLowerCase().includes("admin")};localStorage.setItem("brrUser",JSON.stringify(u));setUser(u);go("dashboard")};
@@ -52,7 +74,7 @@ const buy = async (b) => {
  function Blog(){return <section className="wrap page"><SectionHead title="Blog" text="Free thoughts and premium writing for your readers."/><div className="posts big">{posts.map(p=><Post key={p.title} p={p}/>)}<Post premium p={{tag:"Members only",title:"The chapter I almost deleted",desc:"A behind-the-scenes story about editing, doubt and finishing the work."}}/></div></section>}
  function Membership(){return <section className="wrap page"><SectionHead title="Membership" text="Choose a plan and unlock the full reading room."/><div className="plans">{[["Monthly","7.99"],["Annual","79"]].map(([n,p])=><div className="plan" key={n}><span className="eyebrow">READER</span><h3>{n}</h3><strong>${p}<small>{n==="Annual"?"/ year":"/ month"}</small></strong><ul><li>Premium blog archive</li><li>Exclusive chapters</li><li>Early book releases</li><li>Members-only letters</li>{n==="Annual"&&<li>Annual digital collection</li>}</ul><button className="pill purple full" onClick={()=>subscribe(n)}>{member?"Manage membership":"Join "+n.toLowerCase()}</button></div>)}</div></section>}
  function Auth({signupMode=false}){return <section className="auth wrap"><form className="form" onSubmit={signupMode?signup:login}><span className="eyebrow">{signupMode?"JOIN THE READING ROOM":"WELCOME BACK"}</span><h2>{signupMode?"Create your account":"Log in"}</h2><p>{signupMode?"Start free and upgrade whenever you're ready.":"Access your books, membership and reading dashboard."}</p>{signupMode&&<label>Name<input name="name" required placeholder="Your name"/></label>}<label>Email<input name="email" type="email" required placeholder="you@example.com"/></label><label>Password<input type="password" required placeholder="••••••••"/></label><button className="pill dark full">{signupMode?"Create account":"Log in"}</button><button type="button" className="textbtn" onClick={()=>go(signupMode?"login":"signup")}>{signupMode?"Already have an account? Log in":"New here? Create an account"}</button></form></section>}
- function Dashboard(){if(!user){go("login");return null}return <section className="wrap page"><div className="dash"><aside className="side"><h3>Reader Room</h3><button onClick={()=>go("dashboard")}>Overview</button><button onClick={()=>go("books")}>Browse books</button><button onClick={()=>go("blog")}>Blog</button><button onClick={()=>go("membership")}>Membership</button>{user.admin&&<button onClick={()=>go("admin")}>Admin dashboard</button>}<button onClick={logout}>Log out</button></aside><main><SectionHead title={`Welcome, ${user.name}.`} text="Your personal reading dashboard."/><div className="stats"><Stat t="Membership" v={member?"Active":"Free"}/><Stat t="Books available" v="3"/><Stat t="Saved" v="0"/></div><div className="panel"><h3>Continue reading</h3><p>No active reading session yet.</p><button className="pill dark" onClick={()=>go("books")}>Browse books</button></div></main></div></section>}
+ function Dashboard(){if(!user){go("login");return null}return <section className="wrap page"><div className="dash"><aside className="side"><h3>Reader Room</h3><button onClick={()=>go("dashboard")}>Overview</button><button onClick={()=>go("books")}>Browse books</button><button onClick={()=>go("blog")}>Blog</button><button onClick={()=>go("membership")}>Membership</button>{user.admin&&<button onClick={()=>go("admin")}>Admin dashboard</button>}<button onClick={logout}>Log out</button></aside><main><SectionHead title={`Welcome, ${user.name}.`} text="Your personal reading dashboard."/><div className="stats"><Stat t="Membership" v={member?"Active":"Free"}/><Stat t="Books available" v={books.length}/><Stat t="Saved" v="0"/></div><div className="panel"><h3>Continue reading</h3><p>No active reading session yet.</p><button className="pill dark" onClick={()=>go("books")}>Browse books</button></div></main></div></section>}
  function Stat({t,v}){return <div className="stat"><span>{t}</span><b>{v}</b></div>}
  function Admin(){
   if(!user?.admin){go("login");return null}
