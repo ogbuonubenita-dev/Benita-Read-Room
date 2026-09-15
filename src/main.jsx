@@ -70,7 +70,35 @@ const buy = async (b) => {
  function SectionHead({title,text}){return <div className="sectionhead"><h2>{title}</h2><p>{text}</p></div>}
  function Post({p,premium=false}){return <article className="post"><span>{p.tag}</span><h3>{p.title}</h3><p>{p.desc}</p><button className="textbtn" onClick={()=>premium&&!member?go("membership"):notify("Article reader opened — connect your CMS/content API for full posts.")}>{premium&&!member?"Unlock →":"Read →"}</button></article>}
  function CTA(){return <section className="darksection"><div className="wrap cta"><div><span className="eyebrow">READER MEMBERSHIP</span><h2>Turn occasional readers into a community.</h2><p>Give subscribers premium posts, bonus chapters, early releases and a members-only letter.</p></div><div className="mini"><b>$7.99</b><small>/ month</small><button className="pill purple" onClick={()=>subscribe("Monthly")}>Start membership →</button></div></div></section>}
- function Books(){return <section className="wrap page"><SectionHead title="Bookstore" text="Your digital shop for books, collections and future releases."/><div className="grid">{books.map(b=><BookCard key={b.id} b={b}/>)}</div></section>}
+function Books(){
+  const categories=[...new Set(books.map(b=>b.cat))];
+  const [selectedCategory,setSelectedCategory]=useState("All");
+
+  const filteredBooks=selectedCategory==="All"
+    ? books
+    : books.filter(b=>b.cat===selectedCategory);
+
+  return <section className="wrap page">
+    <SectionHead title="Bookstore" text="Your digital shop for books, collections and future releases."/>
+
+    <div className="categorybar">
+      <button className={selectedCategory==="All"?"pill purple":"pill"} onClick={()=>setSelectedCategory("All")}>All</button>
+      {categories.map(category=>
+        <button
+          key={category}
+          className={selectedCategory===category?"pill purple":"pill"}
+          onClick={()=>setSelectedCategory(category)}
+        >
+          {category}
+        </button>
+      )}
+    </div>
+
+    <div className="grid">
+      {filteredBooks.map(b=><BookCard key={b.id} b={b}/>)}
+    </div>
+  </section>
+}
  function Blog(){return <section className="wrap page"><SectionHead title="Blog" text="Free thoughts and premium writing for your readers."/><div className="posts big">{posts.map(p=><Post key={p.title} p={p}/>)}<Post premium p={{tag:"Members only",title:"The chapter I almost deleted",desc:"A behind-the-scenes story about editing, doubt and finishing the work."}}/></div></section>}
  function Membership(){return <section className="wrap page"><SectionHead title="Membership" text="Choose a plan and unlock the full reading room."/><div className="plans">{[["Monthly","7.99"],["Annual","79"]].map(([n,p])=><div className="plan" key={n}><span className="eyebrow">READER</span><h3>{n}</h3><strong>${p}<small>{n==="Annual"?"/ year":"/ month"}</small></strong><ul><li>Premium blog archive</li><li>Exclusive chapters</li><li>Early book releases</li><li>Members-only letters</li>{n==="Annual"&&<li>Annual digital collection</li>}</ul><button className="pill purple full" onClick={()=>subscribe(n)}>{member?"Manage membership":"Join "+n.toLowerCase()}</button></div>)}</div></section>}
  function Auth({signupMode=false}){return <section className="auth wrap"><form className="form" onSubmit={signupMode?signup:login}><span className="eyebrow">{signupMode?"JOIN THE READING ROOM":"WELCOME BACK"}</span><h2>{signupMode?"Create your account":"Log in"}</h2><p>{signupMode?"Start free and upgrade whenever you're ready.":"Access your books, membership and reading dashboard."}</p>{signupMode&&<label>Name<input name="name" required placeholder="Your name"/></label>}<label>Email<input name="email" type="email" required placeholder="you@example.com"/></label><label>Password<input type="password" required placeholder="••••••••"/></label><button className="pill dark full">{signupMode?"Create account":"Log in"}</button><button type="button" className="textbtn" onClick={()=>go(signupMode?"login":"signup")}>{signupMode?"Already have an account? Log in":"New here? Create an account"}</button></form></section>}
