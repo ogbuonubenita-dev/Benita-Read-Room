@@ -42,8 +42,8 @@ async function loadBooks(){
 }
  const go=p=>{setPage(p);location.hash="#/"+p;scrollTo(0,0)};
  const notify=m=>{setToast(m);setTimeout(()=>setToast(""),2500)};
- const login=e=>{e.preventDefault();const email=e.currentTarget.email.value;const u={name:email.split("@")[0],email,admin:email.toLowerCase().includes("admin")};localStorage.setItem("brrUser",JSON.stringify(u));setUser(u);go("dashboard")};
- const signup=e=>{e.preventDefault();const u={name:e.currentTarget.name.value,email:e.currentTarget.email.value,admin:false};localStorage.setItem("brrUser",JSON.stringify(u));setUser(u);go("dashboard")};
+ const login=async e=>{e.preventDefault();const email=e.currentTarget.email.value;const password=e.currentTarget.password.value;const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)return notify(error.message);const u={id:data.user.id,name:data.user.user_metadata?.full_name||email.split("@")[0],email:data.user.email,admin:false};setUser(u);go("dashboard")};
+ const signup=async e=>{e.preventDefault();const name=e.currentTarget.name.value;const email=e.currentTarget.email.value;const password=e.currentTarget.password.value;const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name}}});if(error)return notify(error.message);if(!data.user)return notify("Please check your email to confirm your account.");const u={id:data.user.id,name,email:data.user.email,admin:false};setUser(u);go("dashboard")};
  const subscribe=plan=>{localStorage.setItem("brrMember","1");setMember(true);notify(`${plan} membership selected — connect Paystack/Flutterwave/Stripe for live checkout.`);go("dashboard")};
 const buy = async (b) => {
   const email = user?.email;
