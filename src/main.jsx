@@ -47,13 +47,25 @@ async function loadBooks(){
  const subscribe=plan=>{localStorage.setItem("brrMember","1");setMember(true);notify(`${plan} membership selected — connect Paystack/Flutterwave/Stripe for live checkout.`);go("dashboard")};
 const buy = async (b) => {
   const email = user?.email;
-  if (!email) return notify("Please log in before purchasing.");
+  const userId = user?.id;
+
+  if (!email || !userId) {
+    return notify("Please log in before purchasing.");
+  }
 
   const { data, error } = await supabase.functions.invoke("create-payment", {
-    body: { email, amount: Number(b.price) * 100 }
+    body: {
+      email,
+      amount: Math.round(Number(b.price) * 100),
+      bookId: b.id,
+      userId
+    }
   });
 
-  if (error) return notify(error.message);
+  if (error) {
+    console.error("Payment error:", error);
+    return notify(error.message);
+  }
 
   if (data?.data?.authorization_url) {
     window.location.href = data.data.authorization_url;
